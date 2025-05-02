@@ -1,4 +1,4 @@
-FROM node:20-alpine/node
+FROM node:20-alpine AS node
 
 WORKDIR /var/www
 COPY package.json package-lock.json ./
