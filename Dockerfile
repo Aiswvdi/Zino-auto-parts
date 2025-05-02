@@ -1,3 +1,9 @@
+FROM node:20-alpine/node
+
+WORKDIR /var/www
+COPY package.json package-lock.json ./
+RUN npm install && npm run build
+
 FROM phpswoole/swoole:php8.3-alpine
 
 RUN apk add --no-cache \
@@ -29,6 +35,11 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 RUN composer install --no-dev --optimize-autoloader
 
+RUN php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache \
+    && php artisan storage:link \
+    && php artisan optimize
 EXPOSE 8000
 
 CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000"]
