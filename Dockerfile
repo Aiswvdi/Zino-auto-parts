@@ -38,8 +38,7 @@ RUN composer install --no-dev --optimize-autoloader
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache \
-    && php artisan storage:link \
-    && php artisan optimize
+    && php artisan storage:link 
 EXPOSE 8000
 
 CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000"]
