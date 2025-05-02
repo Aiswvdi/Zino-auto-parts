@@ -28,9 +28,6 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 RUN composer install --no-dev --optimize-autoloader
 
-ENV APP_ENV=production
-ENV APP_DEBUG=false
-ENV APP_KEY=base64:YourBase64EncodedKeyHere
 
 EXPOSE 8000
 
