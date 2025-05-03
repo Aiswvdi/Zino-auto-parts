@@ -1,5 +1,6 @@
 FROM phpswoole/swoole:php8.3-alpine
 
+# Install system dependencies
 RUN apk add --no-cache \
     bash \
     git \
@@ -21,20 +22,33 @@ RUN apk add --no-cache \
     pcntl \
     opcache
 
-WORKDIR /var/www
+# Create a non-root user
+RUN addgroup -g 1000 laravel && \
+    adduser -u 1000 -G laravel -s /bin/sh -D laravel
 
-COPY . .
-
+# Install Composer as a non-root user
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+WORKDIR /var/www
+
+# Copy composer files first for better layer caching
+COPY --chown=laravel:laravel composer.json composer.lock ./
+
+# Install dependencies as non-root user
+USER laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# For development only - production should use environment variables
-RUN if [ -z "$APP_KEY" ]; then php artisan key:generate; fi
+# Switch back to root for system operations
+USER root
 
-RUN chown -R www-data:www-data /var/www/public \
-    && chmod -R 755 /var/www/public
+# Copy the rest of the application
+COPY --chown=laravel:laravel . .
 
+# Set proper permissions
+RUN chown -R laravel:laravel /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 755 /var/www/storage /var/www/bootstrap/cache
+
+# Optimize Laravel
 RUN php artisan config:clear \
     && php artisan cache:clear \
     && php artisan view:clear \
@@ -43,6 +57,9 @@ RUN php artisan config:clear \
     && php artisan route:cache \
     && php artisan view:cache \
     && php artisan storage:link
+
+# Switch to non-root user for runtime
+USER laravel
 
 EXPOSE 8000
 
