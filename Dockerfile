@@ -35,14 +35,14 @@ RUN if [ -d "public/build" ]; then cp -R public/build public/css public/js /var/
 RUN chown -R www-data:www-data /var/www/public \
     && chmod -R 755 /var/www/public
 
-RUN php artisan config:clear \
-    && php artisan cache:clear \
-    && php artisan view:clear \
-    && php artisan route:clear \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && php artisan storage:link
+# RUN php artisan config:clear \
+#     && php artisan cache:clear \
+#     && php artisan view:clear \
+#     && php artisan route:clear \
+#     && php artisan config:cache \
+#     && php artisan route:cache \
+#     && php artisan view:cache \
+#     && php artisan storage:link
 
 EXPOSE 8000
 
