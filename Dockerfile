@@ -1,10 +1,3 @@
-FROM node:20-alpine AS node
-
-WORKDIR /var/www
-COPY package.json package-lock.json ./
-RUN npm install && npm run production
-RUN cp -R public/build public/css public/js /var/www/public/
-
 FROM phpswoole/swoole:php8.3-alpine
 
 RUN apk add --no-cache \
@@ -31,11 +24,13 @@ RUN apk add --no-cache \
 WORKDIR /var/www
 
 COPY . .
-COPY --from=node /var/www/public /var/www/public
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 RUN composer install --no-dev --optimize-autoloader
+
+# Copy assets properly
+RUN if [ -d "public/build" ]; then cp -R public/build public/css public/js /var/www/public/; fi
 
 RUN chown -R www-data:www-data /var/www/public \
     && chmod -R 755 /var/www/public
