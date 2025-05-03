@@ -2,7 +2,7 @@ FROM node:20-alpine AS node
 
 WORKDIR /var/www
 COPY package.json package-lock.json ./
-RUN npm install && npm run build
+RUN npm install && npm run production
 RUN cp -R public/build public/css public/js /var/www/public/
 
 FROM phpswoole/swoole:php8.3-alpine
