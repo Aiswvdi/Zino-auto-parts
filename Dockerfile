@@ -1,6 +1,6 @@
 FROM phpswoole/swoole:php8.3-alpine
 
-# Install system dependencies
+# 1. Install system dependencies
 RUN apk add --no-cache \
     bash \
     git \
@@ -20,45 +20,50 @@ RUN apk add --no-cache \
     zip \
     intl \
     pcntl \
-    opcache
+    opcache \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd
 
-# Create a non-root user
+# 2. Create and configure non-root user
 RUN addgroup -g 1000 laravel && \
-    adduser -u 1000 -G laravel -s /bin/sh -D laravel
+    adduser -u 1000 -G laravel -s /bin/sh -D laravel && \
+    mkdir -p /var/www/storage /var/www/bootstrap/cache && \
+    chown -R laravel:laravel /var/www
 
-# Install Composer as a non-root user
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# 3. Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    chmod +x /usr/local/bin/composer
 
 WORKDIR /var/www
 
-# Copy composer files first for better layer caching
+# 4. Copy only what's needed for composer install
 COPY --chown=laravel:laravel composer.json composer.lock ./
 
-# Install dependencies as non-root user
+# 5. Install dependencies as non-root user
 USER laravel
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-# Switch back to root for system operations
+# 6. Switch back to root for system operations
 USER root
 
-# Copy the rest of the application
+# 7. Copy the rest of the application
 COPY --chown=laravel:laravel . .
 
-# Set proper permissions
-RUN chown -R laravel:laravel /var/www/storage /var/www/bootstrap/cache
-RUN chmod -R 755 /var/www/storage /var/www/bootstrap/cache
+# 8. Set proper permissions
+RUN chown -R laravel:laravel /var/www && \
+    chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-# Optimize Laravel
-RUN php artisan config:clear \
-    && php artisan cache:clear \
-    && php artisan view:clear \
-    && php artisan route:clear \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && php artisan storage:link
+# 9. Optimize Laravel
+RUN php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan view:clear && \
+    php artisan route:clear && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
+    php artisan storage:link
 
-# Switch to non-root user for runtime
+# 10. Switch to non-root user for runtime
 USER laravel
 
 EXPOSE 8000
