@@ -23,26 +23,29 @@ RUN apk add --no-cache \
 
 WORKDIR /var/www
 
-COPY . .
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock ./
 
+# Install dependencies
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
 RUN composer install --no-dev --optimize-autoloader
 
-# Copy assets properly
-RUN if [ -d "public/build" ]; then cp -R public/build public/css public/js /var/www/public/; fi
+# Copy the rest of the application
+COPY . .
 
-RUN chown -R www-data:www-data /var/www/public \
-    && chmod -R 755 /var/www/public
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 755 /var/www/storage /var/www/bootstrap/cache
 
-# RUN php artisan config:clear \
-#     && php artisan cache:clear \
-#     && php artisan view:clear \
-#     && php artisan route:clear \
-#     && php artisan config:cache \
-#     && php artisan route:cache \
-#     && php artisan view:cache \
-#     && php artisan storage:link
+# Optimize Laravel
+RUN php artisan config:clear \
+    && php artisan cache:clear \
+    && php artisan view:clear \
+    && php artisan route:clear \
+    && php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache \
+    && php artisan storage:link
 
 EXPOSE 8000
 
